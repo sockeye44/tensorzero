@@ -193,7 +193,7 @@ pub enum InputMessageContent {
         value: String,
     },
     Thought(Thought),
-    #[serde(alias = "image")]
+    #[serde(alias = "image", alias = "video")]
     File(File),
     /// An unknown content block type, used to allow passing provider-specific
     /// content blocks (e.g. Anthropic's "redacted_thinking") in and out
