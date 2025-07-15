@@ -102,7 +102,7 @@ pub enum ResolvedInputMessageContent {
         value: String,
     },
     Thought(Thought),
-    #[serde(alias = "image")]
+    #[serde(alias = "image", alias = "video")]
     File(Box<FileWithPath>),
     Unknown {
         data: Value,
@@ -116,7 +116,7 @@ pub enum ResolvedInputMessageContent {
 #[cfg_attr(test, ts(export))]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, str))]
 pub struct FileWithPath {
-    #[serde(alias = "image")]
+    #[serde(alias = "image", alias = "video")]
     pub file: Base64File,
     pub storage_path: StoragePath,
 }

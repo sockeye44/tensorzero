@@ -29,6 +29,28 @@ pub fn require_image(mime_type: &MediaType, provider_type: &str) -> Result<(), E
     Ok(())
 }
 
+/// Validate that a mime type represents a supported video file.
+///
+/// Currently we only allow a small set of widely supported formats. This may be
+/// extended in the future.
+pub fn require_video(mime_type: &MediaType, provider_type: &str) -> Result<(), Error> {
+    if mime_type.type_() != mime::VIDEO {
+        return Err(Error::new(ErrorDetails::UnsupportedContentBlockType {
+            content_block_type: format!("file: {mime_type}"),
+            provider_type: provider_type.to_string(),
+        }));
+    }
+
+    // Only allow a limited set of common codecs for now.
+    match mime_type.subtype().as_ref() {
+        "mp4" | "webm" | "quicktime" | "ogg" | "mpeg" => Ok(()),
+        other => Err(Error::new(ErrorDetails::UnsupportedContentBlockType {
+            content_block_type: format!("file: video/{other}"),
+            provider_type: provider_type.to_string(),
+        })),
+    }
+}
+
 fn skip_serialize_file_data(_: &Option<String>) -> bool {
     !SERIALIZE_FILE_DATA.is_set()
 }
@@ -261,7 +283,7 @@ mod tests {
     use tracing_test::traced_test;
 
     use crate::inference::types::{
-        file::{filename_to_mime_type, sanitize_raw_request},
+        file::{filename_to_mime_type, sanitize_raw_request, require_video},
         resolved_input::FileWithPath,
         storage::{StorageKind, StoragePath},
         Base64File, ContentBlock, RequestMessage, Role,
@@ -382,5 +404,17 @@ mod tests {
             mime::TEXT_PLAIN
         );
         assert!(logs_contain("Guessed"))
+    }
+
+    #[test]
+    fn test_require_video() {
+        // Supported format
+        require_video(&"video/mp4".parse().unwrap(), "test").unwrap();
+
+        // Unsupported mime type entirely
+        assert!(require_video(&mime::IMAGE_JPEG, "test").is_err());
+
+        // Unsupported video subtype
+        assert!(require_video(&"video/x-matroska".parse().unwrap(), "test").is_err());
     }
 }
